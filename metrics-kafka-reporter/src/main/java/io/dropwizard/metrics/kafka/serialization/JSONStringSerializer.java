@@ -161,6 +161,7 @@ public class JSONStringSerializer implements KafkaMetricsSerializer {
      * timestamp, creates corresponding {@link ProducerRecord}s for
      * sending to Kafka, and adds them to the given message list.
      *
+     * @param <T> the expected Metrics type
      * @param messageList the list to which the generated Kafka {@link
      * ProducerRecord}s should be added.
      * @param metrics the metrics to convert for publication to Kafka
