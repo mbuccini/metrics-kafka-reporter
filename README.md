@@ -4,17 +4,13 @@
 A reporter for [Codahale/Dropwizard Metrics][metrics] that publishes
 measurements to an [Apache Kafka][kafka] topic as JSON documents.
 
-Both [Java][mkr-java] and [Clojure][mkr-clj] reporters are available:
+Please refer to the [main project `README`][prj-url] for an overview.
 
-[![Clojars Project](http://clojars.org/metrics-kafka-reporter/latest-version.svg)](http://clojars.org/metrics-kafka-reporter)
-[![Clojars Project](http://clojars.org/metrics-kafka-reporter/reporter-clj/latest-version.svg)](http://clojars.org/metrics-kafka-reporter/reporter-clj)
-
+[prj-url]: https://github.com/ah45/metrics-kafka-reporter
 [metrics]: https://dropwizard.github.io/metrics
 [kafka]: http://kafka.apache.org/
-[`metrics-clojure`]: http://metrics-clojure.readthedocs.org/
-
-[mkr-java]: ./metrics-kafka-reporter
-[mkr-clj]: ./metrics-kafka-reporter-clj
+[mkr-clj]: ../metrics-kafka-reporter-clj
+[javadoc]: https://ah45.github.io/metrics-kafka-reporter/
 
 ## Compatibility
 
@@ -22,7 +18,6 @@ This reporter has been tested against:
 
 * [Metrics][metrics] version `3.1.0`
 * [Kafka][kafka] version `0.8.2.2`
-* [`metrics-clojure`] version `2.5.1`
 
 It should be compatible with any API compatible release of the above.
 
@@ -87,13 +82,6 @@ topic—all by just swapping out the
 [`msgpack`]: http://msgpack.org/
 [serializer]: ./metrics-kafka-reporter/src/main/java/io/dropwizard/metrics/kafka/serialization/KafkaMetricsSerializer.java
 
-## Installation & Use
-
-Please refer to the sub-projects for installation and usage guidelines
-for your environment:
-
-* [Java][mkr-java]
-* [Clojure][mkr-clj]
 
 ## Gotchas
 
@@ -103,7 +91,7 @@ communication with Kafka:
 * Using the “old” style producer
 
   The reporter can only be used with the “new” (as of version
-  `0.8.2.0`) Kafka Java producers—those from the
+  `0.8.2.0` or `0.10.0.1`) Kafka Java producers—those from the
   `org.apache.kafka.clients.producer` namespace—and not the “old”
   Scala producers—those from the `kafka.javaapi.producer` namespace.
 * Using incompatible serializers
@@ -130,6 +118,88 @@ communication with Kafka:
   method. This is what the included [`JSONByteArraySerializer`] does.
 
 [`JSONByteArraySerializer`]: ./metrics-kafka-reporter/src/main/java/io/dropwizard/metrics/kafka/serialization/JSONByteArraySerializer.java
+
+
+## Installation
+
+You need to build the package  with:
+
+`mvn build`
+
+and then publish it to your repository.
+
+## Using
+
+The main `KafkaReporter` class implements the `ScheduledReporter`
+interface and so follows the pattern of:
+
+1. Instantiate a builder:
+
+        KafkaReporter.forRegistry(registry)
+
+2. Set build options:
+
+        .convertRatesTo(TimeUnit.SECONDS)
+        .filter(MetricFilter.ALL)
+
+3. Build the reporter, providing a Kafka `Producer` instance:
+
+        .build(producer);
+
+Building the reporter has a single required argument: the Kafka
+producer to use for sending messags. As with the other reporters all
+of the build options are optional and have default values.
+
+Please refer to the [Javadoc documentation][javadoc] for details of
+the available build options and their defaults.
+
+## Example
+
+Post a metric containing a random number every 10 seconds:
+
+```java
+// imports
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+
+import com.codahale.metrics.MetricRegistry;
+
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.serialization.StringSerializer;
+
+import io.dropwizard.metrics.kafka.KafkaReporter;
+
+// registry, connections, etc.
+final MetricRegistry registry = new MetricRegistry();
+
+Map<String,String> config = new HashMap<String, String>();
+
+config.put("bootstrap.servers", "127.0.0.1:9092");
+
+final StringSerializer serializer = new StringSerializer();
+final KafkaProducer<String, String> kafka = new KafkaProducer<String, String>(config, serializer, serializer);
+
+final KafkaReporter reporter = KafkaReporter.forRegistry(registry).build(kafka);
+
+// metric
+registry.register(MetricRegistry.name("metrics-kafka-reporter", "example", "random"),
+                  new Gauge<Integer>() {
+                      private final static Random rand = new Random();
+
+                      @Override
+                      public Integer getValue() {
+                          return rand.nextInt(10000);
+                      }
+                  });
+
+reporter.start(10, TimeUnit.SECONDS);
+```
+
+## Documentation
+
+[Javadoc documentation][javadoc] is available and serves as the
+primary reference.
 
 ## License
 
