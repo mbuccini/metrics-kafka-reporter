@@ -1,14 +1,19 @@
 *.class
 *.jar
 
+.idea/
 lib/
 classes/
 target/
 checkouts/
+javadoc/
 .lein-deps-sum
 .lein-repl-history
 .lein-plugins
 .lein-failures
 .nrepl-port
 
-*-clj/pom.xml
+*.iml
+*.ipr
+*.iws
+
